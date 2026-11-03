@@ -1,9 +1,8 @@
 # terraform-volcenginecc-clb-https
 
-> Status: `partial-validated`. With Terraform `1.5.7` and Registry Provider
-> `volcengine/volcenginecc v0.0.73`, the basic HTTPS listener lifecycle has
-> passed. The complete scenario is blocked by concurrent CLB rule creation in
-> the Provider/API and is not ready for InfraManager default parallelism.
+> Status: `draft`. The module requires Terraform `1.5.7` and
+> `volcengine/volcenginecc v0.0.73`. Default-parallel Rule operations are not
+> ready for InfraManager until the Provider/API handles CLB configuration state.
 
 ## Overview
 
@@ -16,6 +15,8 @@ The module does not create or import the CLB, certificate, DNS record, backend
 server groups, or backend servers.
 
 ## Usage
+
+After the module is published, use its Registry address:
 
 ```hcl
 module "https" {
@@ -38,8 +39,9 @@ module "https" {
 }
 ```
 
-Provider credentials, region, and backend configuration belong to the calling
-root module.
+Before publication, use the repository checkout as the module source in a
+calling root configuration. Provider credentials, region, and backend
+configuration belong to that calling root module.
 
 ## Requirements
 
@@ -50,9 +52,9 @@ root module.
 
 ## Providers
 
-| Name | Source |
-|---|---|
-| `volcenginecc` | `volcengine/volcenginecc` |
+| Name | Source | Version |
+|---|---|---|
+| `volcenginecc` | `volcengine/volcenginecc` | `= 0.0.73` |
 
 ## Resources
 
@@ -65,27 +67,27 @@ root module.
 
 ## Inputs
 
-| Name | Required | Description |
-|---|---|---|
-| `load_balancer_id` | Yes | Existing CLB ID |
-| `default_server_group_id` | Yes | Existing default backend server group |
-| `certificate_source` | Yes | `clb` or `cert_center` |
-| `certificate_id` | Conditional | CLB certificate ID when source is `clb` |
-| `cert_center_certificate_id` | Conditional | Certificate Center ID when source is `cert_center` |
-| `security_policy_id` | No | HTTPS TLS policy; default `tls_cipher_policy_1_2` |
-| `health_check` | No | HTTPS/HTTP health-check configuration |
-| `enable_http_redirect` | No | Create HTTP listener and 301 redirect |
-| `redirect_domain` | Conditional | Required when HTTP redirect is enabled |
-| `forwarding_rules` | No | Stable-keyed HTTPS domain/path rules |
+| Name | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `load_balancer_id` | `string` | Yes | n/a | Existing CLB ID. |
+| `default_server_group_id` | `string` | Yes | n/a | Existing default backend server group ID. |
+| `certificate_source` | `string` | Yes | n/a | `clb` or `cert_center`. |
+| `certificate_id` | `string` | Conditional | `null` | CLB certificate ID when source is `clb`. |
+| `cert_center_certificate_id` | `string` | Conditional | `null` | Certificate Center ID when source is `cert_center`. |
+| `security_policy_id` | `string` | No | `tls_cipher_policy_1_2` | TLS policy for HTTPS. |
+| `health_check` | `object` | No | See `variables.tf` | Listener health-check configuration. |
+| `enable_http_redirect` | `bool` | No | `false` | Create HTTP Listener and permanent redirect. |
+| `redirect_domain` | `string` | Conditional | `null` | Required when redirect is enabled. |
+| `forwarding_rules` | `map(object)` | No | `{}` | Stable-keyed HTTPS forwarding rules. |
 
 ## Outputs
 
-| Name | Description |
+| Name | Type | Description |
 |---|---|
-| `https_listener_id` | HTTPS listener ID |
-| `http_listener_id` | HTTP listener ID or `null` |
-| `http_redirect_rule_id` | Redirect rule ID or `null` |
-| `https_forwarding_rule_ids` | Forwarding rule IDs by input key |
+| `https_listener_id` | `string` | HTTPS listener ID. |
+| `http_listener_id` | `string` | HTTP listener ID, or `null` when disabled. |
+| `http_redirect_rule_id` | `string` | Redirect Rule ID, or `null` when disabled. |
+| `https_forwarding_rule_ids` | `map(string)` | Forwarding Rule IDs by stable input key. |
 
 ## Examples
 
@@ -105,13 +107,9 @@ Both examples require caller-owned IDs and can be initialized independently.
   rule; changing a domain or URL may also require replacement.
 - CLB requires `health_check.port = 0` to reuse the backend server port in
   this tested HTTP/HTTPS scenario.
-- `basic` passed `plan -> apply -> independent read-back -> second plan with
-  no changes -> destroy`. The certificate was detached and all test resources
-  were absent after destroy.
-- `complete` failed under normal Terraform concurrency: simultaneous CLB Rule
-  creates returned `InvalidLoadBalancer.InvalidStatus`. Do not claim
-  InfraManager default-parallelism support until the Provider/API serializes
-  rule operations or supports concurrent creation.
+- The CLB API can reject simultaneous Rule creates or deletes with
+  `InvalidLoadBalancer.InvalidStatus`. Do not rely on default InfraManager
+  parallelism until the Provider/API serializes or retries this operation.
 
 ## License
 
