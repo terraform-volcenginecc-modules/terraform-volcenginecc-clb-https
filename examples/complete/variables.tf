@@ -51,7 +51,7 @@ variable "redirect_domain" {
 variable "redirect_path" {
   type        = string
   default     = "/"
-  description = "HTTP redirect path."
+  description = "HTTP 重定向规则的匹配路径和目标路径；默认 / 会跳转到 HTTPS 根路径。"
 }
 
 variable "health_check" {

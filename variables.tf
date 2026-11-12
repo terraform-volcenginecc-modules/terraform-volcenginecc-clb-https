@@ -158,7 +158,7 @@ variable "redirect_domain" {
 variable "redirect_path" {
   type        = string
   default     = "/"
-  description = "Path matched and preserved by the HTTP redirect rule."
+  description = "HTTP 重定向规则的匹配路径和目标路径；默认 / 会跳转到 HTTPS 根路径。"
 
   validation {
     condition     = startswith(var.redirect_path, "/")
