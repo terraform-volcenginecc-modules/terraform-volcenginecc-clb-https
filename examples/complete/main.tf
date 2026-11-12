@@ -1,18 +1,6 @@
-terraform {
-  required_version = "= 1.5.7"
-
-  required_providers {
-    volcenginecc = {
-      source  = "volcengine/volcenginecc"
-      version = "= 0.0.73"
-    }
-  }
-}
-
-provider "volcenginecc" {}
-
 module "https" {
-  source = "../.."
+  source  = "terraform-volcenginecc-modules/clb-https/volcenginecc"
+  version = "~> 1.0"
 
   load_balancer_id           = var.load_balancer_id
   default_server_group_id    = var.default_server_group_id
